@@ -22,16 +22,20 @@ System.register(['angular', 'lodash', 'jquery', 'jquery.flot', 'jquery.flot.time
             var firstRender = true;
             var ctrl = scope.ctrl;
             var panel = ctrl.panel;
-            var data;
+
             var seriesList;
             var i;
 
             ctrl.events.on('render', function () {
-              data = ctrl.series;
-              if (data) {
-                for (var i in data) {
-                  data[i].color = ctrl.data[i].color;
+              seriesList = [];
+              _.map(ctrl.series || [], function (serie, i) {
+                if (serie.target == 'label') {
+                  return;
                 }
+                seriesList.push({ label: serie.label, color: serie.color });
+              });
+
+              if (seriesList && seriesList.length > 0) {
                 render();
               }
             });
@@ -41,8 +45,6 @@ System.register(['angular', 'lodash', 'jquery', 'jquery.flot', 'jquery.flot.time
                 elem.append($container);
                 firstRender = false;
               }
-
-              seriesList = data;
 
               $container.empty();
 
@@ -82,7 +84,7 @@ System.register(['angular', 'lodash', 'jquery', 'jquery.flot', 'jquery.flot.time
                 html += '</span>';
 
                 if (panel.legend.values) {
-                  html += '<div class="graph-legend-value no-pointer ' + ctrl.panel.valueName + '">' + ctrl.formatValue(series.stats[ctrl.panel.valueName]) + '</div>';
+                  html += '<div class="graph-legend-value no-pointer ' + ctrl.panel.valueName + '">' + series.formatValue(series.stats[ctrl.panel.valueName]) + '</div>';
                 }
 
                 html += '</div>';

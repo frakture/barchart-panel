@@ -11,19 +11,21 @@ angular.module('grafana.directives').directive('barchartLegend', function() {
       var firstRender = true;
       var ctrl = scope.ctrl;
       var panel = ctrl.panel;
-      var data;
+      
       var seriesList;
       var i;
 
-      ctrl.events.on('render', function() {
-        data = ctrl.series;
-        if (data) {
-          for(var i in data) {
-            data[i].color = ctrl.data[i].color;
-          }
-          render();
-        }
-      });
+      ctrl.events.on('render', function () {
+		seriesList=[];
+		_.map(ctrl.series ||[], function (serie, i) {
+			if (serie.target=='label'){return}
+			seriesList.push({label:serie.label,color:serie.color}); 
+		});
+		
+		  if (seriesList && seriesList.length>0) {
+			render();
+		  }
+	});
 
       function render() {
         if (firstRender) {
@@ -31,8 +33,7 @@ angular.module('grafana.directives').directive('barchartLegend', function() {
           firstRender = false;
         }
 
-        seriesList = data;
-
+        
         $container.empty();
 
         var tableLayout = panel.legendTable && panel.legend.values;

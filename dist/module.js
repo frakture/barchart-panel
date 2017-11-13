@@ -74,9 +74,9 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                 function BarChartCtrl($scope, $injector, $rootScope) {
                     _classCallCheck(this, BarChartCtrl);
 
-                    var _this = _possibleConstructorReturn(this, (BarChartCtrl.__proto__ || Object.getPrototypeOf(BarChartCtrl)).call(this, $scope, $injector));
+                    var _this3 = _possibleConstructorReturn(this, (BarChartCtrl.__proto__ || Object.getPrototypeOf(BarChartCtrl)).call(this, $scope, $injector));
 
-                    _this.$rootScope = $rootScope;
+                    _this3.$rootScope = $rootScope;
 
                     var panelDefaults = {
                         legend: {
@@ -105,15 +105,15 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                         decimals: 2
                     };
 
-                    _.defaults(_this.panel, panelDefaults);
-                    _.defaults(_this.panel.legend, panelDefaults.legend);
+                    _.defaults(_this3.panel, panelDefaults);
+                    _.defaults(_this3.panel.legend, panelDefaults.legend);
 
-                    _this.events.on('render', _this.onRender.bind(_this));
-                    _this.events.on('data-received', _this.onDataReceived.bind(_this));
-                    _this.events.on('data-error', _this.onDataError.bind(_this));
-                    _this.events.on('data-snapshot-load', _this.onDataReceived.bind(_this));
-                    _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_this));
-                    return _this;
+                    _this3.events.on('render', _this3.onRender.bind(_this3));
+                    _this3.events.on('data-received', _this3.onDataReceived.bind(_this3));
+                    _this3.events.on('data-error', _this3.onDataError.bind(_this3));
+                    _this3.events.on('data-snapshot-load', _this3.onDataReceived.bind(_this3));
+                    _this3.events.on('init-edit-mode', _this3.onInitEditMode.bind(_this3));
+                    return _this3;
                 }
 
                 _createClass(BarChartCtrl, [{
@@ -145,32 +145,37 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                     value: function parseSeries(series) {
                         var _this2 = this;
 
-                        return _.map(this.series, function (serie, i) {
-                            return {
-                                label: serie.alias,
-                                data: serie.flotpairs[0],
+                        /*
+                        	Sample data
+                        [
+                        {"target":"label","datapoints":[["c1",1510595650453],["c2",1510595650454],["c3",1510595650455],["c4",1510595650456]],},
+                        {"target":"opens","datapoints":[[0.193,1510595650453],[0.193,1510595650454],[0.193,1510595650455],[0.193,1510595650456]]}
+                        ,{"target":"clicks","datapoints":[[0.456,1510595650453],[0.456,1510595650454],[0.456,1510595650455],[0.456,1510595650456]]}]
+                        */
+                        var s = [];
+
+                        _.map(this.series, function (serie, i) {
+                            if (serie.target == 'label') {
+                                _this2.ticks = serie.datapoints.map(function (d, i) {
+                                    return [i, d[0]];
+                                });return;
+                            }
+                            s.push({
+                                label: serie.target,
+                                data: serie.datapoints.map(function (d, i) {
+                                    return [i, d[0]];
+                                }),
                                 color: _this2.panel.aliasColors[serie.alias] || _this2.$rootScope.colors[i]
-                            };
+                            });
                         });
+                        return s;
                     }
                 }, {
                     key: "onDataReceived",
                     value: function onDataReceived(dataList) {
-                        this.series = dataList.map(this.seriesHandler.bind(this));
+                        this.series = dataList;
                         this.data = this.parseSeries(this.series);
                         this.render(this.data);
-                    }
-                }, {
-                    key: "seriesHandler",
-                    value: function seriesHandler(seriesData) {
-                        var series = new TimeSeries({
-                            datapoints: seriesData.datapoints,
-                            alias: seriesData.target
-                        });
-
-                        series.flotpairs = series.getFlotPairs(this.panel.nullPointMode);
-
-                        return series;
                     }
                 }, {
                     key: "getDecimalsForValue",
@@ -227,6 +232,7 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                 }, {
                     key: "link",
                     value: function link(scope, elem, attrs, ctrl) {
+                        var _this = this;
                         var data, panel;
 
                         elem = elem.find('.barchart-panel');
@@ -277,6 +283,7 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                         }
 
                         function addBarChart() {
+
                             var width = elem.width();
                             var height = elem.height();
 
@@ -297,12 +304,11 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
 
                             elem.html(plotCanvas);
 
-                            var plotSeries = [];
-                            var plotTicks = [];
-                            _.map(data, function (origData, i) {
-                                plotSeries.push({
+                            var plotSeries = _.map(data, function (origData, i) {
+
+                                return {
                                     label: origData.label,
-                                    data: [[i, origData.data[1]]],
+                                    data: origData.data,
                                     color: origData.color,
                                     bars: {
                                         show: true,
@@ -311,12 +317,8 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                                         barWidth: 0.7,
                                         zero: true,
                                         lineWidth: 0
-                                    },
-                                    xaxis: {
-                                        ticks: [i, origData.label]
                                     }
-                                });
-                                plotTicks.push([i, origData.label]);
+                                };
                             });
 
                             var options = {
@@ -328,7 +330,7 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                                     show: false
                                 },
                                 xaxis: {
-                                    ticks: plotTicks,
+                                    ticks: _this.ticks,
                                     show: panel.xaxis.show
                                 },
                                 yaxis: {
@@ -350,6 +352,9 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                                 selection: {
                                     mode: "x",
                                     color: '#666'
+                                },
+                                series: {
+                                    stack: false
                                 }
                             };
 

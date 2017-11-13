@@ -71,30 +71,32 @@ export class BarChartCtrl extends MetricsPanelCtrl {
     }
 
     parseSeries(series) {
-        return _.map(this.series, (serie, i) => {
-            return {
-                label: serie.alias,
-                data: serie.flotpairs[0],
-                color: this.panel.aliasColors[serie.alias] || this.$rootScope.colors[i]
-            };
-        });
+    	var _this2 = this;
+                        
+		/*
+			Sample data
+		[
+		{"target":"label","datapoints":[["c1",1510595650453],["c2",1510595650454],["c3",1510595650455],["c4",1510595650456]],},
+		{"target":"opens","datapoints":[[0.193,1510595650453],[0.193,1510595650454],[0.193,1510595650455],[0.193,1510595650456]]}
+		,{"target":"clicks","datapoints":[[0.456,1510595650453],[0.456,1510595650454],[0.456,1510595650455],[0.456,1510595650456]]}]
+		*/
+		var s=[];
+		
+		_.map(this.series, function (serie, i) {
+			if (serie.target=='label'){_this2.ticks=serie.datapoints.map((d,i)=>[i,d[0]]); return;}
+			s.push({
+				label:serie.target,
+				data:serie.datapoints.map((d,i)=>[i,d[0]]),
+				color: _this2.panel.aliasColors[serie.alias] || _this2.$rootScope.colors[i]
+			});
+		});
+		return s;
     }
 
     onDataReceived(dataList) {
-        this.series = dataList.map(this.seriesHandler.bind(this));
-        this.data = this.parseSeries(this.series);
-        this.render(this.data);
-    }
-
-    seriesHandler(seriesData) {
-        var series = new TimeSeries({
-            datapoints: seriesData.datapoints,
-            alias: seriesData.target
-        });
-
-        series.flotpairs = series.getFlotPairs(this.panel.nullPointMode);
-
-        return series;
+		 this.series = dataList;
+		this.data = this.parseSeries(this.series);
+		this.render(this.data);
     }
 
     getDecimalsForValue(value) {
@@ -148,6 +150,7 @@ export class BarChartCtrl extends MetricsPanelCtrl {
     }
 
     link(scope, elem, attrs, ctrl) {
+    	var _this=this;
         var data, panel;
 
         elem = elem.find('.barchart-panel');
@@ -194,106 +197,100 @@ export class BarChartCtrl extends MetricsPanelCtrl {
             }
         }
 
-        function addBarChart() {
-            var width = elem.width();
-            var height = elem.height();
+		function addBarChart() {
+			
+			var width = elem.width();
+			var height = elem.height();
 
-            var size = Math.min(width, height);
+			var size = Math.min(width, height);
 
-            var plotCanvas = $('<div></div>');
-            var plotCss = {
-                top: '10px',
-                margin: 'auto',
-                position: 'relative',
-                height: (size - 20) + 'px'
-            };
+			var plotCanvas = $('<div></div>');
+			var plotCss = {
+				top: '10px',
+				margin: 'auto',
+				position: 'relative',
+				height: size - 20 + 'px'
+			};
 
-            plotCanvas.css(plotCss);
+			plotCanvas.css(plotCss);
 
-            var $panelContainer = elem.parents('.panel-container');
-            var backgroundColor = $panelContainer.css('background-color');
+			var $panelContainer = elem.parents('.panel-container');
+			var backgroundColor = $panelContainer.css('background-color');
 
-            elem.html(plotCanvas);
+			elem.html(plotCanvas);
+	   
+			var plotSeries=_.map(data, function (origData, i) {
+			
+				return {
+					label: origData.label,
+					data: origData.data,
+					color: origData.color,
+					bars: {
+						show: true,
+						align: 'center',
+						fill: 1,
+						barWidth: 0.7,
+						zero: true,
+						lineWidth: 0
+					}
+				}
+			});
 
-            var plotSeries = [];
-            var plotTicks = [];
-            _.map(data, function(origData, i) {
-                plotSeries.push({
-                                    label: origData.label,
-                                    data: [[
-                                        i,
-                                        origData.data[1]
-                                    ]],
-                                    color: origData.color,
-                                    bars: {
-                                        show: true,
-                                        align: 'center',
-                                        fill: 1,
-                                        barWidth: 0.7,
-                                        zero: true,
-                                        lineWidth: 0
-                                    },
-                                    xaxis: {
-                                        ticks: [i, origData.label]
-                                    }
-                                });
-                plotTicks.push([
-                                   i,
-                                   origData.label
-                               ]);
-            });
+			var options = {
+				hooks: {
+					draw: [drawHook],
+					processOffset: [processOffsetHook]
+				},
+				legend: {
+					show: false
+				},
+				xaxis: {
+					ticks: _this.ticks,
+					show: panel.xaxis.show
+				},
+				yaxis: {
+					show: panel.yaxis.show,
+					tickFormatter: function tickFormatter(val, axis) {
+						return ctrl.formatValue(val);
+					}
+				},
+				shadowSize: 0,
+				grid: {
+					minBorderMargin: 0,
+					markings: [],
+					backgroundColor: backgroundColor,
+					borderWidth: 0,
+					hoverable: true,
+					color: '#c8c8c8',
+					margin: { left: 0, right: 0 }
+				},
+				selection: {
+					mode: "x",
+					color: '#666'
+				},
+				series:{
+					stack:false
+				}
+			};
+	
+		
+			$.plot(plotCanvas, plotSeries, options);
+			plotCanvas.bind("plothover", function (event, pos, item) {
+				if (!item) {
+					$tooltip.detach();
+					return;
+				}
 
-            var options = {
-                hooks: {
-                    draw: [drawHook],
-                    processOffset: [processOffsetHook],
-                },
-                legend: {
-                    show: false
-                },
-                xaxis: {
-                    ticks: plotTicks,
-                    show: panel.xaxis.show
-                },
-                yaxis: {
-                    show: panel.yaxis.show,
-                    tickFormatter: function (val, axis) {
-                        return ctrl.formatValue(val);
-                    }
-                },
-                shadowSize: 0,
-                grid: {
-                    minBorderMargin: 0,
-                    markings: [],
-                    backgroundColor: backgroundColor,
-                    borderWidth: 0,
-                    hoverable: true,
-                    color: '#c8c8c8',
-                    margin: {left: 0, right: 0},
-                },
-                selection: {
-                    mode: "x",
-                    color: '#666'
-                }
-            };
+				var body;
+				var formatted = ctrl.formatValue(item.series.data[0][1]);
 
-            $.plot(plotCanvas, plotSeries, options);
-            plotCanvas.bind("plothover", function (event, pos, item) {
-                if (!item) {
-                    $tooltip.detach();
-                    return;
-                }
-
-                var body;
-                var formatted = ctrl.formatValue(item.series.data[0][1]);
-
-                body = '<div class="graph-tooltip-small"><div class="graph-tooltip-time">';
-                body += '<div class="graph-tooltip-value">' + item.series.label + ': ' + formatted;
-                body += '</div>';
-                body += "</div></div>";
-                $tooltip.html(body).place_tt(pos.pageX + 20, pos.pageY);
-            });
-        }
+				body = '<div class="graph-tooltip-small"><div class="graph-tooltip-time">';
+				body += '<div class="graph-tooltip-value">' + item.series.label + ': ' + formatted;
+				body += '</div>';
+				body += "</div></div>";
+				$tooltip.html(body).place_tt(pos.pageX + 20, pos.pageY);
+			});
+		}
 
 
         function render() {
