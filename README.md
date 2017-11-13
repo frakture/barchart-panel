@@ -1,4 +1,12 @@
 The barchart-panel is based on the original grafana [piechart-panel](https://github.com/grafana/piechart-panel)
+#Sample SQL to use the barchart
+
+Should have a 'label' column, then 1-n series columns.  It will stack the series.
+
+select 'c1' as label, 0.456 as opens,0.193 as clicks 
+union select 'c2' as label,  0.456 as opens,0.193 as clicks
+union select 'c3' as label,  0.456 as opens,0.193 as clicks
+union select 'c4' as label,  0.456 as opens, 0.193 as clicks;
 
 ![Barchart Screenshot](/src/img/barchart-panel.png?raw=true)
 
