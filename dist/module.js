@@ -366,7 +366,7 @@ System.register(["lodash", "app/plugins/sdk", "app/core/utils/kbn", "app/core/ti
                                 }
 
                                 var body;
-                                var formatted = ctrl.formatValue(item.series.data[0][1]);
+                                var formatted = ctrl.formatValue(item.datapoint[1]);
 
                                 body = '<div class="graph-tooltip-small"><div class="graph-tooltip-time">';
                                 body += '<div class="graph-tooltip-value">' + item.series.label + ': ' + formatted;

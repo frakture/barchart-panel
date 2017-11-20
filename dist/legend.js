@@ -28,11 +28,8 @@ System.register(['angular', 'lodash', 'jquery', 'jquery.flot', 'jquery.flot.time
 
             ctrl.events.on('render', function () {
               seriesList = [];
-              _.map(ctrl.series || [], function (serie, i) {
-                if (serie.target == 'label') {
-                  return;
-                }
-                seriesList.push({ label: serie.label, color: serie.color });
+              _.map(ctrl.data || [], function (serie, i) {
+                seriesList.push({ label: serie.label, color: serie.color, legend: true });
               });
 
               if (seriesList && seriesList.length > 0) {
